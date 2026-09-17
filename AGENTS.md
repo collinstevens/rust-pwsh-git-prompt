@@ -7,3 +7,9 @@
 - During investigation or design discussions, discuss one finding or tradeoff at a time. Do not start implementing unless the user asks.
 - Keep edits narrowly scoped to the current step. Do not bundle unrelated changes, cleanup, or follow-on work.
 - Follow a broader scope when the user explicitly requests it.
+
+# Git workflow
+
+- Commit directly to `master`, the repository's primary branch.
+- When asked to push, push directly to that branch.
+- Do not create feature branches or pull requests unless the user explicitly requests them.
