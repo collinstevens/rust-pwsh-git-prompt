@@ -2,7 +2,7 @@
 
 Run these benchmarks from PowerShell 7 on Windows.
 
-Record concise findings in [CONCLUSIONS.md](CONCLUSIONS.md), naming the measured environment and linking supporting JSON in `results/`. Update conclusions when further measurements change the evidence.
+Record findings as simple one-liners in [CONCLUSIONS.md](CONCLUSIONS.md), with supporting measurements and environment details saved locally in `results/`. Raw results are ignored by Git. Update conclusions when further measurements change the evidence.
 
 ## PowerShell startup
 
@@ -10,25 +10,28 @@ Each startup script starts a fresh `pwsh.exe` using its absolute path with `-NoL
 
 ```powershell
 pwsh -NoProfile -File .\benchmarks\measure-pwsh-launch-to-exit.ps1
-pwsh -NoProfile -File .\benchmarks\measure-pwsh-first-command.ps1
+pwsh -NoProfile -File .\benchmarks\measure-pwsh-startup.ps1 -Verbose
 ```
 
 The launch-to-exit benchmark runs `exit` and measures from immediately before the parent starts the process until it observes termination.
 
-The first-command benchmark records a timestamp as the child's first statement. It compares that timestamp with the parent's launch timestamp, excluding output delivery and shutdown. It includes the cost of resolving and invoking the timestamp call; it does not measure interactive prompt readiness.
+The startup benchmark records a timestamp as the child's first statement. It compares that timestamp with the parent's launch timestamp, excluding output delivery and shutdown. It includes the parent's launch preparation and the cost of resolving and invoking the child's timestamp call; it does not measure interactive prompt readiness. No launcher overhead is subtracted.
 
-Both run one initial launch, report it separately, then summarize 30 subsequent launches by default. These are warm-cache measurements; the initial launch is not guaranteed to be cold. Results are observed timings, not proven theoretical floors.
+The startup benchmark records ten warmup launches separately, then measures 1,000 fresh processes by default. It retains all measured samples and reports minimum, mean, median, sample standard deviation, p95, and p99. Use `-Warmups` to adjust warmup. The launch-to-exit benchmark still uses one initial launch and 30 measured launches. `measure-pwsh-first-command.ps1` is a compatibility entry point to the startup benchmark with its original one-warmup, 30-sample defaults.
+
+These are warm-cache measurements; even the initial launch is not guaranteed to be cold. The fixed sample count is not an adaptive convergence check. Results are observed timings, not proven theoretical floors.
 
 Use `-Iterations` to change the sample count or `-PwshPath` to select a different PowerShell executable:
 
 ```powershell
-.\benchmarks\measure-pwsh-first-command.ps1 -Iterations 100 -PwshPath 'C:\Program Files\PowerShell\7\pwsh.exe'
+.\benchmarks\measure-pwsh-startup.ps1 -Iterations 1000 -PwshPath 'C:\Program Files\PowerShell\7\pwsh.exe'
 ```
 
 Each script emits JSON containing machine and executable details, summary statistics, and all measured samples. Save results with output redirection:
 
 ```powershell
-.\benchmarks\measure-pwsh-first-command.ps1 > first-command-results.json
+New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
+.\benchmarks\measure-pwsh-startup.ps1 > benchmarks/results/pwsh-startup.json
 ```
 
 Run one benchmark at a time. Child processes inherit the parent's environment and process working directory. Profiles are skipped, but normal PowerShell initialization, installed security software, and machine load still affect the measurements.
@@ -54,7 +57,8 @@ Use `-A ARM64` with Arm64 PowerShell. The harness architectures must match. Gene
 By default, 20 batch pairs each collect 50 samples per harness after ten warmup launches per harness, for 1,000 measured launches per harness. Warmup samples are recorded separately and excluded from statistics. The order alternates between PowerShell-first and C-first pairs. Samples are collected sequentially; the startup of the C harness and its output collection are excluded from its internal measurements. A default run takes several minutes. Add `-Verbose` for progress on the verbose stream while JSON stays on the success stream.
 
 ```powershell
-.\benchmarks\measure-process-start-overhead.ps1 -Verbose > process-start-results.json
+New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
+.\benchmarks\measure-process-start-overhead.ps1 -Verbose > benchmarks/results/process-start.json
 ```
 
 `-PwshPath` selects the child executable and `-NativeHarnessPath` selects the compiled C harness. `-Iterations`, `-Batches`, and `-Warmups` override the sampling budget. JSON output includes machine/runtime/compiler details, raw warmup and measured samples for each pair, and pooled and per-batch summary statistics including mean, median, sample standard deviation, and p95. A positive PowerShell-minus-C difference means the PowerShell launch path took longer in that run.
