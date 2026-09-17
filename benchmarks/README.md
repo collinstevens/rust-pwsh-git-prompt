@@ -4,6 +4,26 @@ Run these benchmarks from PowerShell 7 on Windows.
 
 Record findings as simple one-liners in [CONCLUSIONS.md](CONCLUSIONS.md), with supporting measurements and environment details saved locally in `results/`. Raw results are ignored by Git. Update conclusions when further measurements change the evidence.
 
+## Git branch
+
+```powershell
+pwsh -NoProfile -File .\benchmarks\measure-git-branch.ps1 -Verbose
+```
+
+This runs `git --no-pager branch` in PowerShell's current filesystem location, measuring from immediately before `Process.Start()` until `WaitForExit()` returns. It includes process launch, Git initialization, repository discovery, listing local branches, redirected output, and shutdown. Output is drained asynchronously; terminal rendering and executable lookup are excluded. A failed Git command stops the benchmark.
+
+The script records ten warmup launches separately, then measures 1,000 launches by default. JSON output includes executable and environment details, every sample, minimum, mean, median, sample standard deviation, p95, p99, and maximum. All measured samples are retained. These are warm-cache observations, with no overhead subtracted.
+
+Use `-Iterations` and `-Warmups` to adjust sampling, `-GitPath` to select a Git executable, and `-WorkingDirectory` to select a repository or a directory within it:
+
+```powershell
+.\benchmarks\measure-git-branch.ps1 -WorkingDirectory 'C:\path\to\repo' -Iterations 100
+New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
+.\benchmarks\measure-git-branch.ps1 > benchmarks/results/git-branch.json
+```
+
+This measures listing all local branches; timings depend on the repository, branch count, Git configuration, inherited environment, and machine load. Run one benchmark at a time.
+
 ## PowerShell startup
 
 Each startup script starts a fresh `pwsh.exe` using its absolute path with `-NoLogo -NoProfile -NonInteractive`, redirects output, and creates no new window.
