@@ -52,6 +52,30 @@ New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
 .\benchmarks\measure-git-launch-to-exit.ps1 > benchmarks/results/git-launch-to-exit.json
 ```
 
+## Git wrapper overhead
+
+```powershell
+pwsh -NoProfile -File .\benchmarks\measure-git-wrapper-overhead.ps1 -Verbose
+```
+
+This compares the Git for Windows wrapper (`cmd/git.exe`) with the actual Git executable (`mingw64/bin/git.exe` on x64) from the same installation. Both run `--exec-path`: a successful early exit during option parsing, before command dispatch, command-path setup, or repository discovery. It prints one path and exits. Unlike `--version`, it skips built-in command dispatch; unlike running Git without arguments, it avoids usage output and a failure exit. See the [Git option handler](https://github.com/git-for-windows/git/blob/v2.55.0.windows.3/git.c#L147-L185) and [wrapper documentation](https://gitforwindows.org/git-wrapper.html).
+
+Each launch records two intervals from immediately before `Process.Start()`: **LaunchCall**, ending when that call returns, and **LaunchToExit**, ending when `WaitForExit()` returns. LaunchCall does not establish that Git is ready; for the wrapper, it only measures launching the wrapper process. LaunchToExit includes initialization, path output, redirected output handling, and shutdown. Use the launch-through-exit difference to estimate the wrapper's added elapsed cost, including its extra process and environment setup.
+
+The default run alternates wrapper-first and direct-Git-first batch pairs: 20 pairs, each with ten warmups and 50 measured launches per executable, totaling 1,000 measured launches each. Processes run sequentially with the same parent environment, working directory, redirected output, and no new window. The wrapper can modify its child's environment as part of its normal behavior. Absolute executable paths are resolved before measurement. Preflight calls check that both executables report the same version and exec path; every measured call must succeed and return that path.
+
+JSON contains both executable paths, Git and harness versions, machine details, all warmup and measured samples, pooled and per-batch summaries, and wrapper-minus-direct mean and median launch-through-exit differences. Summaries include minimum, mean, median, sample standard deviation, p95, p99, and maximum. All outliers are retained. Minimum times are the fastest observed with warm caches, not proven absolute startup floors. The difference between independent minima is not an estimate of wrapper overhead. No harness overhead is subtracted. Alternating order reduces order bias but does not eliminate scheduling, machine-load, or security-software effects.
+
+`-GitWrapperPath` defaults to the Git application on `PATH`; it must be the wrapper. The actual executable is detected under the installation's `mingw64`, `mingw32`, or `clangarm64` directory. Use `-GitPath` for an explicit actual executable, and select both paths from the same installation. No repository is required. `-WorkingDirectory`, `-Iterations` (per batch), `-Batches`, and `-Warmups` (per batch) are configurable.
+
+```powershell
+New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
+.\benchmarks\measure-git-wrapper-overhead.ps1 > benchmarks/results/git-wrapper-overhead.json
+.\benchmarks\measure-git-wrapper-overhead.ps1 -GitWrapperPath 'C:\Program Files\Git\cmd\git.exe' -GitPath 'C:\Program Files\Git\mingw64\bin\git.exe' -Iterations 25 -Batches 4
+```
+
+Run one benchmark at a time. This isolates the practical cost of the wrapper route for a minimal successful Git invocation; it does not measure readiness for a repository command or establish which invocation is fastest on every machine.
+
 ## PowerShell startup
 
 Each startup script starts a fresh `pwsh.exe` using its absolute path with `-NoLogo -NoProfile -NonInteractive`, redirects output, and creates no new window.
