@@ -8,5 +8,6 @@ Fastest observed on this machine with warm caches:
 
 - Start a process (launch call returns) — ~1.3 ms.
 - Start pwsh without profiles (reach its first command) — ~145 ms.
+- Run `git --version` (launch through exit) — ~21.6 ms.
 - List local Git branches (launch through exit) — ~23.8 ms.
 - Get the current Git branch name (launch through exit) — ~23.1 ms.

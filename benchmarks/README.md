@@ -37,6 +37,21 @@ New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
 .\benchmarks\measure-git-current-branch.ps1 > benchmarks/results/git-current-branch.json
 ```
 
+## Git launch through exit
+
+```powershell
+pwsh -NoProfile -File .\benchmarks\measure-git-launch-to-exit.ps1 -Verbose
+```
+
+This runs `git --version` as a minimal-command baseline, measuring from immediately before `Process.Start()` until `WaitForExit()` returns. The interval includes process launch, Git initialization, version output, redirected output handling, and shutdown; it does not isolate startup or measure when Git becomes ready. Executable lookup and terminal rendering are excluded. No repository is required.
+
+It uses the same ten warmups, 1,000 measured launches, JSON statistics, and `-Iterations`, `-Warmups`, `-GitPath`, and `-WorkingDirectory` parameters as the Git branch benchmarks. Use this baseline to investigate how much of their elapsed time comes from running Git with minimal command work. Separate runs do not isolate the exact cost of branch lookup.
+
+```powershell
+New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
+.\benchmarks\measure-git-launch-to-exit.ps1 > benchmarks/results/git-launch-to-exit.json
+```
+
 ## PowerShell startup
 
 Each startup script starts a fresh `pwsh.exe` using its absolute path with `-NoLogo -NoProfile -NonInteractive`, redirects output, and creates no new window.
