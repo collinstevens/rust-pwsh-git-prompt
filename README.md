@@ -1,6 +1,6 @@
 # rust-pwsh-git-prompt
 
-An investigation and prototype of a fast replacement for posh-git and Starship, specifically for Windows 11+ and PowerShell (`pwsh`).
+An investigation and prototype of a fast replacement for posh-git and Starship, specifically for Windows 11+ and modern PowerShell (`pwsh`). Only `pwsh` is supported; legacy Windows PowerShell (`powershell.exe`) is not supported.
 
 The motivation is observed prompt delays of roughly 500 ms to 2 seconds, especially on corporate machines with additional scanning and endpoint detection and response (EDR) software. The goal is to understand the minimum work required for prompt operations and reduce their latency.
 
