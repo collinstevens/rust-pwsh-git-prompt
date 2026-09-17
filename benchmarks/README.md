@@ -2,7 +2,7 @@
 
 Run these benchmarks from PowerShell 7 on Windows.
 
-Record findings as simple one-liners in [CONCLUSIONS.md](CONCLUSIONS.md), with supporting measurements and environment details saved locally in `results/`. Raw results are ignored by Git. Update conclusions when further measurements change the evidence.
+Record conclusions as actionable one-liners in [CONCLUSIONS.md](CONCLUSIONS.md): state what to do and briefly explain the measurement-based reason. For example: "Use PowerShell as the harness for process-start benchmarks instead of C because starting a process in PowerShell only adds ~0.05 ms overhead on this machine." A timing summary alone is not a conclusion. Put timing summaries in the quick reference and save supporting measurements and environment details locally in `results/`. Raw results are ignored by Git. Add a conclusion only when the evidence supports an action, and update it when further measurements change that recommendation.
 
 ## Git branch
 
@@ -23,6 +23,19 @@ New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
 ```
 
 This measures listing all local branches; timings depend on the repository, branch count, Git configuration, inherited environment, and machine load. Run one benchmark at a time.
+
+## Current Git branch
+
+```powershell
+pwsh -NoProfile -File .\benchmarks\measure-git-current-branch.ps1 -Verbose
+```
+
+This runs `git --no-pager branch --show-current` to print the current branch name. It uses the same launch-through-exit timing, output capture, ten warmups, 1,000 measured launches, JSON statistics, and parameters as the Git branch benchmark above. A detached HEAD produces empty output and is still a successful command; running outside a repository stops the benchmark with Git's error.
+
+```powershell
+New-Item -ItemType Directory -Path benchmarks/results -Force | Out-Null
+.\benchmarks\measure-git-current-branch.ps1 > benchmarks/results/git-current-branch.json
+```
 
 ## PowerShell startup
 
